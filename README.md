@@ -25,13 +25,13 @@ A quick example to see how it works.
 ```
 import xarray as xr
 from matplotlib import pyplot as plt
-import linepyline as lpl
+import linepyline
 
 # Instantiate a linepyline radiative transfer model 
 # This loads line and continuum data
 # You only need to do this once at the beginning of the session
 # Set use_numba=False to switch off numba
-rtm = lpl.rtm(use_numba=True)
+rtm = linepyline.rtm(use_numba=True)
 
 # Open file containing US Standard Atmosphere data for this example
 atm = xr.open_dataset('afgl_1986-us_standard.nc')
