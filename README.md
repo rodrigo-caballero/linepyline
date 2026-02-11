@@ -36,30 +36,30 @@ rtm = linepyline.rtm(use_numba=True)
 # Open file containing US Standard Atmosphere data for this example
 atm = xr.open_dataset('afgl_1986-us_standard.nc')
 
-# Thermodynamic profiles
+# Set thermodynamic profiles
 p = atm.p           # total atmospheric pressure (vertical coordinate), 
                          # must be in Pa and ordered by increasing p
 T = atm.t           # atmospheric temperature, must be in K
 ps = p.isel(p=-1) # surface pressure (Pa)
 Ts = T.isel(p=-1) # surface (skin) temperature (K)
 
-# Concentration of radiatively active species (must be molar fraction, units ppv)
+# Set concentration of radiatively active species (must be molar fraction, units ppv)
 # Try with water vapor only (this will include both the line and continuum spectra; 
 # if you want to remove the continuum, set include_mtckd_continuum=False in 
 # the call to rmt.radiative_transfer below)
 absorbers = {'H2O' : atm.x_H2O}
 
-# Transparent background gas mixed with absorbers
+# Set transparent background gas mixed with absorbers
 # (just the name, no need to specify a concentration)
 background_gas = 'air'
 
-# Spectral resolution and range (cm-1) 
+# Set spectral resolution and range (cm-1) 
 # linepyline will internally create a uniformly-spaced wavenumber grid nu 
 dnu = 0.1 
 nu_min = dnu
 nu_max = 2000
 
-# Line profile to use
+# Set line profile to use
 # You can choose between 'lorentz', 'voigt' and 'pseudovoigt'
 # the latter approximates the voigt profile by a linear combination
 # of Lorentzian and Gaussian profiles; the approximation is better than
@@ -67,7 +67,8 @@ nu_max = 2000
 line_shape = 'pseudovoigt'
 
 # Do the calculation -- this will compute mass absorption coefficients, optical depth
-# and thermal radiative fluxes. All output is stored in xarray Dataset ds with coordinates (p, nu).
+# and thermal radiative fluxes. All output is stored in xarray Dataset ds 
+# with coordinates (p, nu).
 # Runtime for this call on an 8-core MacBook M3 is 
 # 0.4 s with numba, 10.6 s without numba, ~25x speedup
 ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, \
@@ -77,7 +78,7 @@ ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, \
 # (averages over blocks of width in cm-1)
 ds_coarse = rtm.coarsen(ds, dnu, width=10)
 
-# plot
+# Plot
 plt.plot(ds.nu, ds.olr, 'k,', alpha=0.2, label='OLR')
 plt.plot(ds_coarse.nu, ds_coarse.olr, label='OLR coarse')
 plt.plot(ds.nu, ds.lw_up_srf, 'k:', label='Surface upward')
