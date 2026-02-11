@@ -1,0 +1,13 @@
+__pycache__/
+.ipynb_checkpoints/
+linepyline.egg-info/
+dev/
+build/
+linepyline/HITRAN/HAPI/*pdf
+linepyline/HITRAN/HAPI/*ipynb
+linepyline/HITRAN/HAPI/data/
+linepyline/HITRAN/HITRAN2016/
+linepyline/HITRAN/HITRAN2024/par/
+
+
+
