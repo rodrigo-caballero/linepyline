@@ -1,7 +1,7 @@
 # linepyline
 
 A line-by-line radiative transfer model in pure python -- no C or
-Fortran extensions to compile. The code runs fast thanks to [numba](https://numba.readthedocs.io) parallelization, which
+Fortran extensions to compile. It runs fast thanks to [numba](https://numba.readthedocs.io) parallelization, which
 gives order-of-magnitude speedup on multi-core CPUs. It produces output in xarray
 Dataset format.
 
