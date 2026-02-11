@@ -27,41 +27,51 @@ import xarray as xr
 from matplotlib import pyplot as plt
 import linepyline as lpl
 
-# instantiate a linepyline radiative transfer model 
+# Instantiate a linepyline radiative transfer model 
+# This loads line and continuum data
+# You only need to do this once at the beginning of the session
 rtm = lpl.rtm()
 
-# open file containing US Standard Atmosphere data
+# Open file containing US Standard Atmosphere data for this example
 atm = xr.open_dataset('afgl_1986-us_standard.nc')
 
-# set profiles
-p = atm.p  # total atmospheric pressure, must be in Pa and ordered by increasing p
-T = atm.t  # atmospheric temperature, must be in K
-ps = p.isel(p=-1) # surface pressure
-Ts = T.isel(p=-1) # surface (skin) temperature
+# Thermodynamic profiles
+p = atm.p           # total atmospheric pressure (vertical coordinate), 
+                         # must be in Pa and ordered by increasing p
+T = atm.t           # atmospheric temperature, must be in K
+ps = p.isel(p=-1) # surface pressure (Pa)
+Ts = T.isel(p=-1) # surface (skin) temperature (K)
 
-# concentration of radiatively active species (must be molar fraction, units ppv)
-# try with water vapor only
+# Concentration of radiatively active species (must be molar fraction, units ppv)
+# Try with water vapor only (this will include both the line and continuum spectra; 
+# if you want to remove the continuum, set include_mtckd_continuum=False in 
+# the call to rmt.radiative_transfer below)
 absorbers = {'H2O' : atm.x_H2O}
 
-# transparent background gas mixed in with absorbers
+# Transparent background gas mixed with absorbers
+# (just the name, no need to specify a concentration)
 background_gas = 'air'
 
-#spectral resolution and range(cm-1) 
+# Spectral resolution and range (cm-1) 
+# linepyline will internally create a uniformly-spaced wavenumber grid nu 
 dnu = 0.1 
 nu_min = dnu
 nu_max = 2000
 
-# line profile to use
+# Line profile to use
+# You can choose between 'lorentz', 'voigt' and 'pseudovoigt'
+# the latter approximates the voigt profile by a linear combination
+# of Lorentzian and Gaussian profiles; the approximation is better than
+# 1.2% error and the run time is ~half that of the full Voigt profile
 line_shape = 'pseudovoigt'
 
-# do the calculation
-# all output is stored in xarray Dataset ds with coordinates (pressure, wavenumber)
-# (runtime for this call is 0.4 s on an 8-core MacBook M3)
+# Do the calculation -- this will compute mass absorption coefficients, optical depth
+# and thermal radiative fluxes. All output is stored in xarray Dataset ds with coordinates (p, nu).
+# Runtime for this call is 0.4 s on an 8-core MacBook M3)
+ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, \
+       absorbers=absorbers, background_gas=background_gas, line_shape=line_shape)
 
-ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, 
-absorbers=absorbers, background_gas=background_gas, line_shape=line_shape)
-
-# make a spectrally-coarsend version of the output 
+# Make a spectrally-coarsend version of the output 
 # (averages over blocks of width in cm-1)
 ds_coarse = rtm.coarsen(ds, dnu, width=10)
 
@@ -75,12 +85,13 @@ plt.gca().set_ylabel('LW flux W/m2/cm-1');
 ```
 ![](examples/h2o_only.svg)
 ```
-# try it again, including CO2
-# if concentration given as scalar, will be assumed uniform (well mixed) through column
+# Try it again, now including CO2
+# if concentration given as a scalar, 
+# it will be assumed uniform (well mixed) through the column
 absorbers = {'H2O' : atm.x_H2O,
                    'CO2' : 400*1.e-6}
 
-# this one takes ~1 s -- CO2 has a lot of lines
+# Repeat the calculation. This one takes ~1 s -- CO2 has a lot of lines
 ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, a
 ```
 ![](examples/h2o_co2.svg)
@@ -100,7 +111,7 @@ pip install .
 
 ## Dependencies
 
-linepyline depends on  (version in parentheses used in developing/testing
+linepyline requires  (version in parentheses used in developing/testing
 the project):
 ```
 python (3.12)
