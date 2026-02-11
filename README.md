@@ -11,14 +11,16 @@ mass absorption coefficients and optical depth for the absorbers, and to solve f
 longwave (thermal) radiative fluxes using the 2-stream approximation. Shortwave
 absorption and scattering will possibly be included in a later release. 
 
-Iinepylie comes with [HITRAN 2024 line lists](http://hitran.org/) for the main isotopes of H2O, CO2, O3, CH3
+Iinepyline comes with [HITRAN 2024 line lists](http://hitran.org/) for the main isotopes of H2O, CO2, O3, CH3
 and NH3, and the [MTCKD 4.3 water vapor continuum
-model](http://rtweb.aer.com/continuum_frame.html)  preinstalled in netCDF format. You can download more
+model](http://rtweb.aer.com/continuum_frame.html)  preinstalled in netCDF format. 
+
+You can download more
 line lists and convert them to netCDF using the script
 `linepyline/HITRAN/HAPI/download_HITRAN_to_netcdf.py` (you may also need to include new
 molecular data in the gases inventory in `linepyline/phys.py`.
 
-# Quickstart
+## Quickstart
 A quick example to see how it works.
 ```
 import xarray as xr
@@ -80,7 +82,7 @@ ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, a
 ```
 ![](examples/h2o_co2.svg)
 
-# Installation
+## Installation
 
 -
    [Download](https://docs.github.com/en/get-started/start-your-journey/downloading-files-from-github) or
@@ -93,7 +95,7 @@ cd linepyline
 pip install .
 ```
 
-# Dependencies
+## Dependencies
 
 linepyline depends on  (version in parentheses used in developing/testing
 the project):
@@ -114,7 +116,7 @@ or create a new environment
 conda create -n linepyline -c conda-forge python=3.12 numpy xarray scipy numba numba-stats
 ```
 
-# Acknowledgements
+## Acknowledgements
 linepyline was inspired by Daniel Koll's [PyRADS](https://github.com/danielkoll/PyRADS)
 and by Ray Pierrehumbert's book [*Principles of Planetary Climate*](https://geosci.uchicago.edu/~rtp1/PrinciplesPlanetaryClimate) and related python code.
 
