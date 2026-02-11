@@ -120,6 +120,7 @@ the project):
 python (3.12)
 numpy (2.26)
 xarray (2025.4.0)
+netCDF4 (1.7.2)
 scipy (1.15.1)
 numba (0.63.1)
 numba-stats (1.11)
@@ -130,7 +131,7 @@ conda install -c conda-forge numpy xarray scipy numba numba-stats
 ```
 or create a new environment
 ```
-conda create -n linepyline -c conda-forge python=3.12 numpy xarray scipy numba numba-stats
+conda create -n linepyline -c conda-forge python=3.12 numpy xarray netCDF4 scipy numba numba-stats matplotlib
 ```
 
 ## Acknowledgements
