@@ -30,7 +30,8 @@ import linepyline as lpl
 # Instantiate a linepyline radiative transfer model 
 # This loads line and continuum data
 # You only need to do this once at the beginning of the session
-rtm = lpl.rtm()
+# Set use_numba=False to switch off numba
+rtm = lpl.rtm(use_numba=True)
 
 # Open file containing US Standard Atmosphere data for this example
 atm = xr.open_dataset('afgl_1986-us_standard.nc')
@@ -67,7 +68,8 @@ line_shape = 'pseudovoigt'
 
 # Do the calculation -- this will compute mass absorption coefficients, optical depth
 # and thermal radiative fluxes. All output is stored in xarray Dataset ds with coordinates (p, nu).
-# Runtime for this call is 0.4 s on an 8-core MacBook M3)
+# Runtime for this call on an 8-core MacBook M3 is 
+# 0.4 s with numba, 10.6 s without numba, ~25x speedup
 ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, \
        absorbers=absorbers, background_gas=background_gas, line_shape=line_shape)
 
