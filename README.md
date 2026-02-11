@@ -54,12 +54,15 @@ nu_max = 2000
 # line profile to use
 line_shape = 'pseudovoigt'
 
-# do the calculation; all output stored in xarray Dataset ds with coordinates (pressure, wavenumber)
+# do the calculation
+# all output is stored in xarray Dataset ds with coordinates (pressure, wavenumber)
 # (runtime for this call is 0.4 s on an 8-core MacBook M3)
-ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, absorbers=absorbers,
-background_gas=background_gas, line_shape=line_shape)
 
-# make a spectrally-coarsend version of the output (averages over blocks of width in cm-1)
+ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, 
+absorbers=absorbers, background_gas=background_gas, line_shape=line_shape)
+
+# make a spectrally-coarsend version of the output 
+# (averages over blocks of width in cm-1)
 ds_coarse = rtm.coarsen(ds, dnu, width=10)
 
 # plot
