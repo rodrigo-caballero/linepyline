@@ -2,9 +2,10 @@
 
 A line-by-line radiative transfer model in pure python -- no C or
 Fortran extensions to compile. The code runs fast thanks to [numba](https://numba.readthedocs.io) parallelization, which
-gives order-of-magnitude speedup on multi-core CPUs.
+gives order-of-magnitude speedup on multi-core CPUs. It produces output in xarray
+Dataset format.
 
-It is aimed at climate-oriented problems in Earth and planetary atmospheres. You can
+linepyline is aimed at climate-oriented problems in Earth and planetary atmospheres. You can
 specify the atmosphere to consist of an arbitrary mixture of absorbing gases and
 optionally a transparent background gas (dry air or N2). There are functions to compute
 mass absorption coefficients and optical depth for the absorbers, and to solve for
@@ -13,12 +14,11 @@ absorption and scattering will possibly be included in a later release.
 
 Iinepyline comes with [HITRAN 2024 line lists](http://hitran.org/) for the main isotopes of H2O, CO2, O3, CH3
 and NH3, and the [MTCKD 4.3 water vapor continuum
-model](http://rtweb.aer.com/continuum_frame.html)  preinstalled in netCDF format. 
+model](http://rtweb.aer.com/continuum_frame.html), all  preinstalled in netCDF format. 
 
-You can download more
-line lists and convert them to netCDF using the script
-`linepyline/HITRAN/HAPI/download_HITRAN_to_netcdf.py` (you may also need to include new
-molecular data in the gases inventory in `linepyline/phys.py`.
+You can download more line lists and convert them to netCDF using the script
+`linepyline/HITRAN/HAPI/download_HITRAN_to_netcdf.py` (you may also need to include
+thermodynamic data for the added molecules in the gases inventory in `linepyline/phys.py`).
 
 ## Quickstart
 A quick example to see how it works.
