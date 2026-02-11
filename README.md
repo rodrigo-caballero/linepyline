@@ -1,17 +1,25 @@
 # linepyline
 
-A line-by-line radiative transfer model in pure python---no C or
+A line-by-line radiative transfer model in pure python -- no C or
 Fortran extensions to compile. The code runs fast thanks to [numba](https://numba.readthedocs.io) parallelization, which
 gives order-of-magnitude speedup on multi-core CPUs.
 
-It comes with [HITRAN 2024 line lists](http://hitran.org/) and the [MTCKD 4.3 continuum
-model](http://rtweb.aer.com/continuum_frame.html)  preinstalled. 
+It is aimed at climate-oriented problems in Earth and planetary atmospheres. You can
+specify the atmosphere to consist of an arbitrary mixture of absorbing gases and
+optionally a transparent background gas (dry air or N2). There are functions to compute
+mass absorption coefficients and optical depth for the absorbers, and to solve for
+longwave (thermal) radiative fluxes using the 2-stream approximation. Shortwave
+absorption and scattering will possibly be included in a later release. 
 
-It is geared to climate-oriented problems in Earth and planetary atmospheres. You can
-specify the atmosphere to consist of an arbitrary mixture of absorbing gases
+Iinepylie comes with [HITRAN 2024 line lists](http://hitran.org/) for the main isotopes of H2O, CO2, O3, CH3
+and NH3, and the [MTCKD 4.3 water vapor continuum
+model](http://rtweb.aer.com/continuum_frame.html)  preinstalled in netCDF format. You can download more
+line lists and convert them to netCDF using the script
+`linepyline/HITRAN/HAPI/download_HITRAN_to_netcdf.py` (you may also need to include new
+molecular data in the gases inventory in `linepyline/phys.py`.
 
 # Quickstart
-A quick example. See `examples/US-standard-atmosphere-example.ipynb` for more details
+A quick example to see how it works.
 ```
 import xarray as xr
 from matplotlib import pyplot as plt
@@ -20,13 +28,13 @@ import linepyline as lpl
 # instantiate a linepyline radiative transfer model 
 rtm = lpl.rtm()
 
-# open file containing US Standard Atmosphere data and set 
+# open file containing US Standard Atmosphere data
 atm = xr.open_dataset('afgl_1986-us_standard.nc')
 
 # set profiles
-p = atm.p # pressure coordinate, must be in Pa and ordered by increasing p
+p = atm.p  # total atmospheric pressure, must be in Pa and ordered by increasing p
+T = atm.t  # atmospheric temperature, must be in K
 ps = p.isel(p=-1) # surface pressure
-T = atm.t # atmospheric temperature, must be in K
 Ts = T.isel(p=-1) # surface (skin) temperature
 
 # concentration of radiatively active species (must be molar fraction, units ppv)
@@ -44,8 +52,8 @@ nu_max = 2000
 # line profile to use
 line_shape = 'pseudovoigt'
 
-# do the calculation; all output stored in xarray Dataset ds
-# runtime is 0.4 s on an 8-core MacBook M3
+# do the calculation; all output stored in xarray Dataset ds with coordinates (pressure, wavenumber)
+# (runtime for this call is 0.4 s on an 8-core MacBook M3)
 ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, absorbers=absorbers,
 background_gas=background_gas, line_shape=line_shape)
 
@@ -67,7 +75,7 @@ plt.gca().set_ylabel('LW flux W/m2/cm-1');
 absorbers = {'H2O' : atm.x_H2O,
                    'CO2' : 400*1.e-6}
 
-# this one takes 0.9 s 
+# this one takes ~1 s -- CO2 has a lot of lines
 ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, a
 ```
 ![](examples/h2o_co2.svg)
@@ -79,7 +87,7 @@ ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, a
    [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?tool=webui)
    this repository
 
-- Install
+- Install:
 ```
 cd linepyline
 pip install .
@@ -95,7 +103,7 @@ numpy (2.26)
 xarray (2025.4.0)
 scipy (1.15.1)
 numba (0.63.1)
-[numba-stats](https://github.com/scikit-hep/numba-stats) (1.11)
+numba-stats (1.11)
 ```
 Using conda, you can install these into your current environment:
 ```
@@ -105,8 +113,10 @@ or create a new environment
 ```
 conda create -n linepyline -c conda-forge python=3.12 numpy xarray scipy numba numba-stats
 ```
-```
 
+# Acknowledgements
+linepyline was inspired by Daniel Koll's [PyRADS](https://github.com/danielkoll/PyRADS)
+and by Ray Pierrehumbert's book [*Principles of Planetary Climate*](https://geosci.uchicago.edu/~rtp1/PrinciplesPlanetaryClimate) and related python code.
 
 
 
