@@ -24,8 +24,8 @@ You can download more line lists  using the Hitran API
 ([HAPI](https://github.com/hitranonline/hapi)), which is included in the linepyline
 distribution. The script
 `linepyline/HITRAN/HAPI/download_HITRAN_to_netcdf.py` shows you how to download the line
-data and convert it to netCDF. You will also need to include
-thermodynamic data for the added molecules in the gases inventory in `linepyline/phys.py`.
+data and convert it to netCDF. You will also need to add
+thermodynamic data for the new molecules in the gases inventory in `linepyline/phys.py`.
 
 ## How it works
 A quick example to illustrate basic usage.
@@ -68,9 +68,9 @@ nu_max = 2000
 
 # Set line profile to use
 # You can choose between 'lorentz', 'voigt' and 'pseudovoigt'
-# the latter approximates the voigt profile by a linear combination
-# of Lorentzian and Gaussian profiles; the approximation is better than
-# 1.2% error and the run time is ~half that of the full Voigt profile
+# The latter approximates the Voigt profile by a linear combination
+# of Lorentzian and Gaussian profiles; the approximation is good (better than
+# 1.2% error) and the run time is ~half that of the full Voigt profile
 line_shape = 'pseudovoigt'
 
 # Do the calculation -- this will compute mass absorption coefficients, optical depth
