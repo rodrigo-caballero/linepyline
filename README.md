@@ -1,7 +1,6 @@
 # linepyline
 
-A line-by-line radiative transfer model in pure python. There are no C or Fortran
-extensions to compile, but the code is fast thanks to
+A line-by-line radiative transfer model in pure python. The code is fast thanks to
 [numba](https://numba.readthedocs.io) parallelization, which gives order-of-magnitude
 speedup on multi-core CPUs.
 
