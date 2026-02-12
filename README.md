@@ -9,7 +9,7 @@ can specify the atmosphere to consist of an arbitrary mixture of absorbing gases
 transparent background gas like dry Earth air or pure N2. The absorbing gases do not
 need to be dilute -- if fact the background gas can be entirely absent.
 
-linepyline defines a single class, linepyline.rtm(), which provides functions to compute
+linepyline defines a single class, `linepyline.rtm()`, which provides functions to compute
 mass absorption coefficients, optical depth for the absorbers, and solve for clear-sky
 longwave (thermal) radiative fluxes using the 2-stream approximation. There is currently
 no treatment for absorption by clouds, or shortwave absorption and scattering.
