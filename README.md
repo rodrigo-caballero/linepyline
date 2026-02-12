@@ -34,9 +34,9 @@ import xarray as xr
 from matplotlib import pyplot as plt
 import linepyline
 
-# Instantiate a linepyline radiative transfer model 
-# This loads line and continuum data
-# You only need to do this once at the beginning of the session
+# Initialize a linepyline radiative transfer model (rtm) object
+# This step loads the line and continuum data
+# You only need to do this once at the beginning of the session.
 # Set use_numba=False to switch off numba
 rtm = linepyline.rtm(use_numba=True)
 
