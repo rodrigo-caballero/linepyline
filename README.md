@@ -7,21 +7,28 @@ Dataset format.
 
 linepyline is aimed at climate-oriented problems in Earth and planetary atmospheres. You can
 specify the atmosphere to consist of an arbitrary mixture of absorbing gases and
-optionally a transparent background gas (dry air or N2). There are functions to compute
-mass absorption coefficients and optical depth for the absorbers, and to solve for
-longwave (thermal) radiative fluxes using the 2-stream approximation. Shortwave
-absorption and scattering will possibly be included in a later release. 
+a transparent background gas like dry Earth air or pure N2. The absorbing gases do
+not need to be dilute --  if fact the
+background gas can be entirely absent. linepyline contains a single class,
+linepyline.rtm(),  which provides functions to compute
+mass absorption coefficients, optical depth for the absorbers, and solve for
+clear-sky longwave (thermal) radiative fluxes using the 2-stream approximation. There is currently
+no treatment for clouds or shortwave
+absorption and scattering.
 
-Iinepyline comes with [HITRAN 2024 line lists](http://hitran.org/) for the main isotopes of H2O, CO2, O3, CH3
-and NH3, and the [MTCKD 4.3 water vapor continuum
+Iinepyline comes with [HITRAN 2024](http://hitran.org/) line lists for the main isotopes of H2O, CO2, O3, CH3
+and NH3, and with the [MTCKD 4.3 water vapor continuum
 model](http://rtweb.aer.com/continuum_frame.html), all  preinstalled in netCDF format. 
 
-You can download more line lists and convert them to netCDF using the script
-`linepyline/HITRAN/HAPI/download_HITRAN_to_netcdf.py` (you may also need to include
-thermodynamic data for the added molecules in the gases inventory in `linepyline/phys.py`).
+You can download more line lists  using the Hitran API
+([HAPI](https://github.com/hitranonline/hapi)), which is included in the linepyline
+distribution. The script
+`linepyline/HITRAN/HAPI/download_HITRAN_to_netcdf.py` shows you how to download the line
+data and convert it to netCDF. You will also need to include
+thermodynamic data for the added molecules in the gases inventory in `linepyline/phys.py`.
 
-## Quickstart
-A quick example to see how it works.
+## How it works
+A quick example to illustrate basic usage.
 ```
 import xarray as xr
 from matplotlib import pyplot as plt
