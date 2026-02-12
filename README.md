@@ -1,9 +1,8 @@
 # linepyline
 
-A line-by-line radiative transfer model in pure python -- no C or
-Fortran extensions to compile. It runs fast thanks to [numba](https://numba.readthedocs.io) parallelization, which
-gives order-of-magnitude speedup on multi-core CPUs. It produces output in xarray
-Dataset format.
+A line-by-line radiative transfer model in pure python. There are no C or
+Fortran extensions to compile, but the code is fast thanks to [numba](https://numba.readthedocs.io) parallelization, which
+gives order-of-magnitude speedup on multi-core CPUs. 
 
 linepyline is aimed at climate-oriented problems in Earth and planetary atmospheres. You can
 specify the atmosphere to consist of an arbitrary mixture of absorbing gases and
