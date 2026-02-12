@@ -1,29 +1,28 @@
 # linepyline
 
-A line-by-line radiative transfer model in pure python. There are no C or
-Fortran extensions to compile, but the code is fast thanks to [numba](https://numba.readthedocs.io) parallelization, which
-gives order-of-magnitude speedup on multi-core CPUs. 
+A line-by-line radiative transfer model in pure python. There are no C or Fortran
+extensions to compile, but the code is fast thanks to
+[numba](https://numba.readthedocs.io) parallelization, which gives order-of-magnitude
+speedup on multi-core CPUs.
 
-linepyline is aimed at climate-oriented problems in Earth and planetary atmospheres. You can
-specify the atmosphere to consist of an arbitrary mixture of absorbing gases and
-a transparent background gas like dry Earth air or pure N2. The absorbing gases do
-not need to be dilute --  if fact the
-background gas can be entirely absent. linepyline contains a single class,
-linepyline.rtm(),  with functions to compute
-mass absorption coefficients, optical depth for the absorbers, and solve for
-clear-sky longwave (thermal) radiative fluxes using the 2-stream approximation. There is currently
-no treatment for clouds or shortwave
-absorption and scattering.
+linepyline is aimed at climate-oriented problems in Earth and planetary atmospheres. You
+can specify the atmosphere to consist of an arbitrary mixture of absorbing gases and a
+transparent background gas like dry Earth air or pure N2. The absorbing gases do not
+need to be dilute -- if fact the background gas can be entirely absent.
 
-Iinepyline comes with [HITRAN 2024](http://hitran.org/) line lists for the main isotopes of H2O, CO2, O3, CH3
-and NH3, and with the [MTCKD 4.3 water vapor continuum
-model](http://rtweb.aer.com/continuum_frame.html), all  preinstalled in netCDF format. 
+linepyline defines a single class, linepyline.rtm(), which provides functions to compute
+mass absorption coefficients, optical depth for the absorbers, and solve for clear-sky
+longwave (thermal) radiative fluxes using the 2-stream approximation. There is currently
+no treatment for absorption by clouds, or shortwave absorption and scattering.
 
-You can download more line lists  using the Hitran API
+Iinepyline comes with [HITRAN 2024](http://hitran.org/) line lists for the main isotopes
+of H2O, CO2, O3, CH3 and NH3, and with the [MTCKD 4.3 water vapor continuum
+model](http://rtweb.aer.com/continuum_frame.html), all preinstalled in netCDF format.
+
+You can download more line lists using the Hitran API
 ([HAPI](https://github.com/hitranonline/hapi)), which is included in the linepyline
-distribution. The script
-`linepyline/HITRAN/HAPI/download_HITRAN_to_netcdf.py` shows you how to download the line
-data and convert it to netCDF. You may also need to add
+distribution. The script `linepyline/HITRAN/HAPI/download_HITRAN_to_netcdf.py` shows you
+how to download the line data and convert it to netCDF. You may also need to add
 thermodynamic data for the new molecules to the gases inventory in `linepyline/phys.py`.
 
 ## How it works
