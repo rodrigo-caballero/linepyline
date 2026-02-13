@@ -8,8 +8,17 @@ class rtm():
     def __init__(self,
                  hitran = 'HITRAN2024',
                  mt_ckd = 'MT_CKD_H2O-4.3',
-                 use_numba=True):
-
+                 use_numba=True,
+                 surface_gravity = 9.81,
+                 background_gas = 'air'):
+        '''
+        Input:
+        surface_gravity: Gravitational acceleration for this atmosphere, float. 
+        background_gas: Name of transparent gas mixed with absorbers, string or None
+          Valid values are "air" (dry Earth air), "N2" or None
+          If None, there is no background gas.
+        '''
+        
         # list of known absorbers
         self.known_absorbers = ['H2O','CO2','O3','CH4','NH3']
 
@@ -39,6 +48,10 @@ class rtm():
 
         # make phys routines available from object
         self.phys = phys
+
+        # set values
+        self.g = surface_gravity
+        self.background_gas = background_gas
  
     def get_kappa_hitran(self, mol_name, nu_min, nu_max, dnu,
                          p, T, p_self=None, 
@@ -205,7 +218,7 @@ class rtm():
         return kappa.assign_attrs({'long_name':f'H2O continuum mass absorption coefficient (m2/kg)'}).squeeze()
 
     def get_optical_depth(self, nu_min, nu_max, dnu,
-                          p, ps, T, q=None, RH=None, absorbers=None, background_gas='air',
+                          p, ps, T, q=None, RH=None, absorbers=None, 
                           line_shape='lorentz', cutoff=25., force_lines_to_grid=False,
                           binning=False, Nbins_gamma=500, Nbins_alpha=10,
                           include_mtckd_continuum=True, closure=False):
@@ -228,9 +241,6 @@ class rtm():
         RH: relative humidity (fraction), scalar or array.
           If scalar, assume uniform through column.
           If given, overrides q and H2O entry in absorbers
-        background_gas: Name of transparent gas mixed with absorbers, string or None
-          Valid values are "air" (dry Earth air) or "N2"
-          If None, there is no background gas, and the molar fractions of absorbers must add up to 1.
         line_shape: which line shape to use, string. Can be "lorentz", "voigt" or "pseudovoigt".
           "pseudovoigt" is an approximation to the full Voigt profile using a linear combination of
           Lorentzian and Gaussian profiles, accurate to better than 1.2%.
@@ -260,8 +270,6 @@ class rtm():
             for name in absorbers:
                 assert name in self.known_absorbers, f'Absorber {name} not in {self.known_absorbers}'
                 absorbers[name] = self.format_input(p, absorbers[name])[1]
-        if background_gas is not None:
-            assert background_gas in ['air','N2'], f'Background gas {background_gas} not in [air, N2]'
 
         # remove absorbers with zero or None concentration
         if absorbers is not None:
@@ -276,8 +284,7 @@ class rtm():
             absorbers = None
                 
         # create new absorbers dict which will contain molar fraction, partial pressure and specific density of each species
-        # (need partial pressure for pressure scaling of line widths, and
-        # specific density to compute mass absorption coefficient)
+        # (need partial pressure for pressure scaling of line widths, and specific density to compute mass absorption coefficient)
         self.absorbers = {}
             
         # first, compute partial pressure
@@ -294,14 +301,16 @@ class rtm():
 
         # catch cases where humidity specified using q or RH
         if q is not None:
-            if 'H2O' in self.absorbers: self.absorbers.pop('H2O')
-            f = self.get_number_fraction_from_specific_humidity(q, background_gas, self.absorbers)
+            if 'H2O' in self.absorbers: # remove H2O if already present, new value will be set
+                self.absorbers.pop('H2O')
+            f = self.get_number_fraction_from_specific_humidity(q, self.background_gas, self.absorbers)
             pp = p*f
             rh = pp/phys.satvp(T, formula='simple')
             self.absorbers['H2O'] = {'f':f, 'pp':pp, 'RH':rh}
             
         if RH is not None:
-            if 'H2O' in self.absorbers: self.absorbers.pop('H2O')
+            if 'H2O' in self.absorbers: # remove H2O if already present, new value will be set
+                self.absorbers.pop('H2O')
             if isinstance(RH, float): 
                 RH = xr.full_like(p, RH) # if scalar, assume uniform through column 
             pp = RH*phys.satvp(T, formula='simple')
@@ -321,21 +330,19 @@ class rtm():
         mean_mol_weight = 0
         for name in self.absorbers:
             mean_mol_weight += self.absorbers[name]['f'] * phys.gases[name].MolecularWeight
-        if background_gas is not None:
-            mean_mol_weight += (1 - f_tot) * phys.gases[background_gas].MolecularWeight 
+        if self.background_gas is not None:
+            mean_mol_weight += (1 - f_tot) * phys.gases[self.background_gas].MolecularWeight 
         for name in self.absorbers:
             eps = phys.gases[name].MolecularWeight / mean_mol_weight 
             self.absorbers[name]['q'] = eps * self.absorbers[name]['f']
 
         # also compute for background gas
-        if background_gas is None:
-            self.background_gas = None
-        else:
+        if self.background_gas is not None:
             f = 1 - f_tot
             pp = p*f
-            eps = phys.gases[background_gas].MolecularWeight / mean_mol_weight
+            eps = phys.gases[self.background_gas].MolecularWeight / mean_mol_weight
             q = eps*f
-            self.background_gas = {background_gas: {'pp':pp, 'f':f, 'q':q}}
+            self.background_gas_concentration = {'pp':pp, 'f':f, 'q':q}
 
         # compute mass absorption coefficient for each absorbing species
         kappas = {}
@@ -370,7 +377,7 @@ class rtm():
         p_int = np.concatenate( ([0], (p[1:] + p[:-1])/2, [ps]) ) # interface pressure
         dp = np.diff(p_int)
         tau_int = np.zeros((len(p_int), kappa.shape[1]))
-        tau_int[1:] = np.cumsum(kappa.data*dp[:,None]/phys.g, axis=0)
+        tau_int[1:] = np.cumsum(kappa.data*dp[:,None]/self.g, axis=0)
         self.tau_int = tau_int
         
         # output tau on midpoints
@@ -379,7 +386,7 @@ class rtm():
         return tau
 
     def radiative_transfer(self, nu_min, nu_max, dnu,
-                           p, ps, T, Ts, q=None, RH=None, absorbers=None, background_gas='air',
+                           p, ps, T, Ts, q=None, RH=None, absorbers=None, 
                            D = 1.5, line_shape='lorentz', cutoff=25., force_lines_to_grid=False,
                            binning=False, Nbins_gamma=500, Nbins_alpha=10,
                            include_mtckd_continuum=True, closure=False):                   
@@ -401,9 +408,6 @@ class rtm():
         RH: relative humidity (fraction), scalar or array.
           If scalar, assume uniform through column.
           If given, overrides q and H2O entry in absorbers
-        background_gas: Name of transparent gas mixed with absorbers, string or None
-          Valid values are "air" (dry Earth air) or "N2"
-          If None, there is no background gas, and the molar fractions of absorbers must add up to 1.
         D: Elsasser diffusivity for 2-stream calculation, inverse of average zenith angle, scalar
         line_shape: which line shape to use, string. Can be "lorentz", "voigt" or "pseudovoigt"
           "pseudovoigt" is an approximation to the full Voigt profile using a linear combination of
@@ -430,7 +434,7 @@ class rtm():
 
         # get optical depth
         tau = self.get_optical_depth(nu_min, nu_max, dnu, 
-                                     p, ps, T, q=q, RH=RH, absorbers=absorbers, background_gas=background_gas, 
+                                     p, ps, T, q=q, RH=RH, absorbers=absorbers, 
                                      line_shape=line_shape, cutoff=cutoff, closure=closure, force_lines_to_grid=force_lines_to_grid,
                                      binning=binning, Nbins_gamma=Nbins_gamma, Nbins_alpha=Nbins_alpha,
                                      include_mtckd_continuum=include_mtckd_continuum)
@@ -450,12 +454,11 @@ class rtm():
         cp = 0
         for name in self.absorbers:
             cp += self.absorbers[name]['q'] * phys.gases[name].cp
-        if background_gas is not None:
-            for name in self.background_gas:
-                cp +=  self.background_gas[name]['q'] * phys.gases[name].cp
+        if self.background_gas is not None:
+            cp +=  self.background_gas_concentration['q'] * phys.gases[name].cp
         # now we can compute heating rate
         p_int = np.concatenate( ([0], (p.data[1:] + p.data[:-1])/2, [ps]) ) # interface pressure
-        hr = phys.g/cp.data[:,None] * np.diff(Fnet, axis=0)/np.diff(p_int)[:,None] * 86400
+        hr = self.g/cp.data[:,None] * np.diff(Fnet, axis=0)/np.diff(p_int)[:,None] * 86400
 
         # prepare output dataset
         output = [
@@ -466,9 +469,10 @@ class rtm():
         if 'H2O' in self.absorbers:
             output.append(self.absorbers['H2O']['q'].rename('q').assign_attrs({'long_name': 'specific humidity (kg/kg)'}))
             output.append(self.absorbers['H2O']['RH'].rename('RH').assign_attrs({'long_name': 'relative humidity'}))
-        for name in self.background_gas:
-            f = self.background_gas[name]['f']
-            pp = self.background_gas[name]['pp']
+        if self.background_gas is not None:
+            name = self.background_gas
+            f = self.background_gas_concentration['f']
+            pp = self.background_gas_concentration['pp']
             output.append(f.rename(f'ppv_{name}').assign_attrs({'long_name': f'molar fraction of background gas ({name})'}))
             output.append(pp.rename(f'p_{name}').assign_attrs({'long_name': f'partial pressure of background gas ({name}) (Pa)'}))
         for name in self.absorbers:

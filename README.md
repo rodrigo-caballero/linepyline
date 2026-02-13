@@ -28,14 +28,10 @@ thermodynamic data for the new molecules to the gases inventory in `linepyline/p
 A quick example to illustrate basic usage.
 ```
 import xarray as xr
-from matplotlib import pyplot as plt
 import linepyline
 
 # Initialize a linepyline radiative transfer model (rtm) object
-# This step loads the line and continuum data
-# You only need to do this once at the beginning of the session.
-# Set use_numba=False to switch off numba
-rtm = linepyline.rtm(use_numba=True)
+rtm = linepyline.rtm(background_gas='air', use_numba=True)
 
 # Open file containing US Standard Atmosphere data for this example
 atm = xr.open_dataset('afgl_1986-us_standard.nc')
@@ -53,26 +49,15 @@ Ts = T.isel(p=-1) # surface (skin) temperature (K)
 # the call to rmt.radiative_transfer below)
 absorbers = {'H2O' : atm.x_H2O}
 
-# Set transparent background gas mixed with absorbers
-# (just the name, no need to specify a concentration)
-background_gas = 'air'
-
 # Set spectral resolution and range (cm-1) 
-# linepyline will internally create a uniformly-spaced wavenumber grid nu 
 dnu = 0.1 
 nu_min = dnu
 nu_max = 2000
 
 # Set line profile to use
-# You can choose between 'lorentz', 'voigt' and 'pseudovoigt'
-# The latter approximates the Voigt profile by a linear combination
-# of Lorentzian and Gaussian profiles; the approximation is good (better than
-# 1.2% error) and the run time is ~half that of the full Voigt profile
 line_shape = 'pseudovoigt'
 
-# Do the calculation -- this will compute mass absorption coefficients, optical depth
-# and thermal radiative fluxes. All output is stored in xarray Dataset ds 
-# with coordinates (p, nu).
+# Compute mass absorption coefficients, optical depth and thermal radiative fluxes.
 # Runtime for this call on an 8-core MacBook M3 is 
 # 0.4 s with numba, 10.6 s without numba, ~25x speedup
 ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, \
@@ -83,18 +68,10 @@ ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, \
 ds_coarse = rtm.coarsen(ds, dnu, width=10)
 
 # Plot
-plt.plot(ds.nu, ds.olr, 'k,', alpha=0.2, label='OLR')
-plt.plot(ds_coarse.nu, ds_coarse.olr, label='OLR coarse')
-plt.plot(ds.nu, ds.lw_up_srf, 'k:', label='Surface upward')
-plt.legend()
-plt.gca().set_xlabel('wavenumber (cm-1)')
-plt.gca().set_ylabel('LW flux W/m2/cm-1');
 ```
 ![](examples/h2o_only.svg)
 ```
 # Try it again, now including CO2
-# if concentration given as a scalar, 
-# it will be assumed uniform (well mixed) through the column
 absorbers = {'H2O' : atm.x_H2O,
                    'CO2' : 400*1.e-6}
 
