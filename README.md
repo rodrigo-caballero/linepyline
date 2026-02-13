@@ -24,6 +24,41 @@ distribution. The script `linepyline/HITRAN/HAPI/download_HITRAN_to_netcdf.py` s
 how to download the line data and convert it to netCDF. You may also need to add
 thermodynamic data for the new molecules to the gases inventory in `linepyline/phys.py`.
 
+## Installation
+
+-
+   [Download](https://docs.github.com/en/get-started/start-your-journey/downloading-files-from-github) or
+   [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?tool=webui)
+   this repository
+
+- Install:
+```
+cd linepyline
+pip install .
+```
+
+## Dependencies
+
+linepyline requires  (version in parentheses used in developing/testing
+the project):
+```
+python (3.12)
+numpy (2.26)
+xarray (2025.4.0)
+netCDF4 (1.7.2)
+scipy (1.15.1)
+numba (0.63.1)
+numba-stats (1.11)
+```
+Using conda, you can install these into your current environment:
+```
+conda install -c conda-forge numpy xarray scipy numba numba-stats
+```
+or create a new environment
+```
+conda create -n linepyline -c conda-forge python=3.12 numpy xarray netCDF4 scipy numba numba-stats matplotlib
+```
+
 ## How it works
 A quick example to illustrate basic usage.
 ```
@@ -102,41 +137,6 @@ absorbers = {'H2O' : atm.x_H2O,
 ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, a
 ```
 ![](examples/h2o_co2.svg)
-
-## Installation
-
--
-   [Download](https://docs.github.com/en/get-started/start-your-journey/downloading-files-from-github) or
-   [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?tool=webui)
-   this repository
-
-- Install:
-```
-cd linepyline
-pip install .
-```
-
-## Dependencies
-
-linepyline requires  (version in parentheses used in developing/testing
-the project):
-```
-python (3.12)
-numpy (2.26)
-xarray (2025.4.0)
-netCDF4 (1.7.2)
-scipy (1.15.1)
-numba (0.63.1)
-numba-stats (1.11)
-```
-Using conda, you can install these into your current environment:
-```
-conda install -c conda-forge numpy xarray scipy numba numba-stats
-```
-or create a new environment
-```
-conda create -n linepyline -c conda-forge python=3.12 numpy xarray netCDF4 scipy numba numba-stats matplotlib
-```
 
 ## Acknowledgements
 linepyline was inspired by Daniel Koll's [PyRADS](https://github.com/danielkoll/PyRADS)
