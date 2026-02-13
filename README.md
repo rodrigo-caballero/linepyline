@@ -15,8 +15,9 @@ longwave (thermal) radiative fluxes using the 2-stream approximation. There is c
 no treatment for absorption by clouds, or shortwave absorption and scattering.
 
 Iinepyline comes with [HITRAN 2024](http://hitran.org/) line lists for the main isotopes
-of H2O, CO2, O3, CH3 and NH3, and with the [MTCKD 4.3 water vapor continuum
-model](http://rtweb.aer.com/continuum_frame.html), all preinstalled in netCDF format.
+of H2O, CO2, O3, CH3 and NH3, and with the [MTCKD
+4.3](http://rtweb.aer.com/continuum_frame.html) water vapor continuum
+model, all preinstalled in netCDF format.
 
 You can download more line lists using the Hitran API
 ([HAPI](https://github.com/hitranonline/hapi)), which is included in the linepyline
