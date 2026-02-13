@@ -25,7 +25,8 @@ how to download the line data and convert it to netCDF. You may also need to add
 thermodynamic data for the new molecules to the gases inventory in `linepyline/phys.py`.
 
 ## How it works
-A quick example to illustrate basic usage.
+A quick example to illustrate basic usage. See
+`examples/US-standard-atmosphere-example.ipynb` for more details.
 ```
 import xarray as xr
 import linepyline
@@ -44,9 +45,7 @@ ps = p.isel(p=-1) # surface pressure (Pa)
 Ts = T.isel(p=-1) # surface (skin) temperature (K)
 
 # Set concentration of radiatively active species (must be molar fraction, units ppv)
-# Try with water vapor only (this will include both the line and continuum spectra; 
-# if you want to remove the continuum, set include_mtckd_continuum=False in 
-# the call to rmt.radiative_transfer below)
+# Water vapor only in this case
 absorbers = {'H2O' : atm.x_H2O}
 
 # Set spectral resolution and range (cm-1) 
