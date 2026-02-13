@@ -25,8 +25,7 @@ how to download the line data and convert it to netCDF. You may also need to add
 thermodynamic data for the new molecules to the gases inventory in `linepyline/phys.py`.
 
 ## How it works
-A quick example to illustrate basic usage. See
-`examples/US-standard-atmosphere-example.ipynb` for more details.
+A quick example to illustrate basic usage. 
 ```
 import xarray as xr
 import linepyline
