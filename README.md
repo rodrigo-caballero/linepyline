@@ -15,7 +15,7 @@ longwave (thermal) radiative fluxes using the 2-stream approximation. There is c
 no treatment for absorption by clouds, or shortwave absorption and scattering.
 
 Iinepyline comes with [HITRAN 2024](http://hitran.org/) line lists for the main isotopes
-of H2O, CO2, O3, CH3 and NH3, and with the [MTCKD
+of H2O, CO2, O3, CH3 and NH3, and the [MTCKD
 4.3](http://rtweb.aer.com/continuum_frame.html) water vapor continuum
 model, all preinstalled in netCDF format.
 
@@ -44,17 +44,13 @@ T = atm.t           # atmospheric temperature, must be in K
 ps = p.isel(p=-1) # surface pressure (Pa)
 Ts = T.isel(p=-1) # surface (skin) temperature (K)
 
-# Set concentration of radiatively active species (must be molar fraction, units ppv)
-# Water vapor only in this case
+# Set concentration of radiatively active species -- water vapor only in this case
 absorbers = {'H2O' : atm.x_H2O}
 
 # Set spectral resolution and range (cm-1) 
 dnu = 0.1 
 nu_min = dnu
 nu_max = 2000
-
-# Set line profile to use
-line_shape = 'pseudovoigt'
 
 # Compute mass absorption coefficients, optical depth and thermal radiative fluxes.
 # Runtime for this call on an 8-core MacBook M3 is 
