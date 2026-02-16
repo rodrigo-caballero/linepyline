@@ -32,7 +32,7 @@ import xarray as xr
 import linepyline
 
 # Initialize a linepyline radiative transfer model (rtm) object
-rtm = linepyline.rtm(background_gas='air', use_numba=True)
+rtm = linepyline.rtm()
 
 # Open file containing US Standard Atmosphere data for this example
 atm = xr.open_dataset('afgl_1986-us_standard.nc')

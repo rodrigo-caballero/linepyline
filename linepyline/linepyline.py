@@ -133,9 +133,9 @@ class rtm():
         gamma = gamma.transpose(..., 'nu_l').data
         alpha = alpha.transpose(..., 'nu_l').data
         if len(S.shape) == 1:
-            S = S.reshape((1,len(nu_l)))
-            gamma = gamma.reshape((1,len(nu_l)))
-            alpha = alpha.reshape((1,len(nu_l)))
+            S = S.reshape((1,len(ds.nu_l)))
+            gamma = gamma.reshape((1,len(ds.nu_l)))
+            alpha = alpha.reshape((1,len(ds.nu_l)))
 
         if binning:
             kappa = self.heavy_lifting_with_binning(nu.data, ds.nu_l.data, S, gamma, alpha, int(Nbins_gamma), int(Nbins_alpha),
@@ -280,8 +280,8 @@ class rtm():
                     entries_to_remove.append(name)
             for name in entries_to_remove:
                 absorbers.pop(name)
-        if len(absorbers) == 0:
-            absorbers = None
+            if len(absorbers) == 0:
+                absorbers = None
                 
         # create new absorbers dict which will contain molar fraction, partial pressure and specific density of each species
         # (need partial pressure for pressure scaling of line widths, and specific density to compute mass absorption coefficient)
@@ -455,7 +455,7 @@ class rtm():
         for name in self.absorbers:
             cp += self.absorbers[name]['q'] * phys.gases[name].cp
         if self.background_gas is not None:
-            cp +=  self.background_gas_concentration['q'] * phys.gases[name].cp
+            cp +=  self.background_gas_concentration['q'] * phys.gases[self.background_gas].cp
         # now we can compute heating rate
         p_int = np.concatenate( ([0], (p.data[1:] + p.data[:-1])/2, [ps]) ) # interface pressure
         hr = self.g/cp.data[:,None] * np.diff(Fnet, axis=0)/np.diff(p_int)[:,None] * 86400

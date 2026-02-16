@@ -38,7 +38,6 @@ def two_stream(B, Bs, tau, D):
 
     return Fup_srf, Fup_atm, Fup, Fdown
 
-@nb.njit(fastmath=True, parallel=True) # numba gives ~10x acceleration here!
 def heavy_lifting(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, force_lines_to_grid):
 
     nu_min = nu[0]
@@ -51,7 +50,7 @@ def heavy_lifting(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, 
     # array to hold output
     kappa = np.zeros((Np, Ngrid), dtype='float')
     
-    # note: numba prange makes a huge difference if used in at least one loop
+    # note: numba prange makes a big difference if used in at least one loop
     # using it in both loops gives no further acceleration
     # swapping order of loops makes no difference
     for i in nb.prange(Nlines):
@@ -84,6 +83,46 @@ def heavy_lifting(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, 
             # add contribution of line to kappa
             kappa[k,i1:i2] += S[k,i]*lineshape
 
+    return kappa        
+
+@nb.njit(fastmath=True, parallel=True) # numba gives ~10x acceleration here!
+def heavy_lifting_v2(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, force_lines_to_grid):
+
+    # get grid parameters
+    nu_min = nu[0]
+    dnu = nu[1] - nu_min
+    Ngrid = len(nu)
+    Nwin = int(cutoff/dnu) # half window width in gridpoints
+    Np, Nlines = S.shape
+
+    # array to hold output
+    kappa = np.zeros((Np, Ngrid), dtype='float')
+
+    # define lineshape function
+    if line_shape == 'lorentz':
+        lineshape = lambda nu, alpha, gamma: lineshape_lorentz(nu, gamma) 
+    if line_shape == 'pseudovoigt':
+        lineshape = lambda nu, alpha, gamma: lineshape_pseudovoigt(nu, alpha, gamma) 
+    if line_shape == 'voigt':
+        lineshape = lambda nu, alpha, gamma: lineshape_voigt(nu, alpha, gamma) 
+
+    icenter = np.searchsorted(nu, nu_l)
+    ileft = np.clip(icenter - Nwin, 0, Ngrid)
+    iright = np.clip(icenter + Nwin, 0, Ngrid)
+    
+    # note: numba prange makes a big difference if used in at least one loop
+    # using it in both loops gives no further acceleration
+    # swapping order of loops makes no difference
+    for i in nb.prange(Nlines):
+        i1 = ileft[i]
+        i2 = iright[i]
+        nu_win = nu[i1:i2] # wavenumbers in window
+        # compute line shape and add to kappa
+        #for k in nb.prange(Np):
+        kappa[:,i1:i2] += S[:,i]*lineshape(nu_win - nu_l[i], alpha[:,i], gamma[:,i])
+        if remove_plinth:
+            # plinth is defined from lorentzian shape
+            kappa[:,i1:i2] -= lineshape_lorentz(cutoff, gamma[:,i])
     return kappa        
 
 @nb.njit(fastmath=True, parallel=True) 
