@@ -34,7 +34,6 @@ import numpy as np
 
 #-------------Basic physical constants-------------------
 #
-g = 9.81 # gravity at earth's surface
 
 #The following five are the most accurate 1986 values
 h = 6.626075540e-34    # Planck's constant

@@ -8,7 +8,7 @@ class rtm():
     def __init__(self,
                  hitran = 'HITRAN2024',
                  mt_ckd = 'MT_CKD_H2O-4.3',
-                 use_numba=True,
+                 use_numba = True,
                  surface_gravity = 9.81,
                  background_gas = 'air'):
         '''

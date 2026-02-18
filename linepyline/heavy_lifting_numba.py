@@ -38,27 +38,102 @@ def two_stream(B, Bs, tau, D):
 
     return Fup_srf, Fup_atm, Fup, Fdown
 
+@nb.jit(fastmath=True, parallel=True)
 def heavy_lifting(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, force_lines_to_grid):
 
+    # grid parameters
     nu_min = nu[0]
-    dnu = nu[1] - nu_min
-
+    dnu = nu[1] - nu_min # assumes evenly-spaced nu grid
     Ngrid = len(nu)
     Nwin = int(cutoff/dnu) # half window width in gridpoints
     Np, Nlines = S.shape
 
+    # define lineshape function
+    if line_shape == 'lorentz':
+        lineshape_func = lambda nu, alpha, gamma: lineshape_lorentz(nu, gamma) 
+    if line_shape == 'pseudovoigt':
+        lineshape_func = lambda nu, alpha, gamma: lineshape_pseudovoigt(nu, alpha, gamma) 
+    if line_shape == 'voigt':
+        lineshape_func = lambda nu, alpha, gamma: lineshape_voigt(nu, alpha, gamma) 
+
     # array to hold output
     kappa = np.zeros((Np, Ngrid), dtype='float')
-    
+
     # note: numba prange makes a big difference if used in at least one loop
     # using it in both loops gives no further acceleration
     # swapping order of loops makes no difference
     for i in nb.prange(Nlines):
         
-        # select window (odd no. of points, Nwin gridpoints either side of center)
-        i0 = int(np.round( (nu_l[i] - nu_min)/dnu) ) # index of window center = gridpoint closest to line
+        ## # select window (odd no. of points, Nwin gridpoints either side of center)
+        ## i0 = int(np.round( (nu_l[i] - nu_min)/dnu) ) # index of window center = gridpoint closest to line
+        ## i1 = max(0, i0 - Nwin) # start of window
+        ## i2 = min(Ngrid, i0 + Nwin + 1) # end of window
+        # select window (even no. of points, Nwin gridpoints either side of line)
+        i0 = int( (nu_l[i] - nu_min)/dnu + 1 ) # index of grid point to the right of line
         i1 = max(0, i0 - Nwin) # start of window
-        i2 = min(Ngrid, i0 + Nwin + 1) # end of window
+        i2 = min(Ngrid, i0 + Nwin) # end of window
+        nu_win = nu[i1:i2] # wavenumbers in window
+
+        # choose where to place the line
+        if force_lines_to_grid:                
+            nu_center = i0*dnu # line centered at central grid point
+        else:
+            nu_center = nu_l[i] # line at its real center, can be in between grid points
+                                # if lines are thinner than grid resolution dnu, will miss a lot of lines!
+
+        # compute line shape and add to kappa
+        for k in nb.prange(Np):
+
+            if line_shape == 'lorentz':
+                lineshape = lineshape_lorentz(nu_win - nu_center, gamma[k,i]) 
+            if line_shape == 'pseudovoigt':
+                lineshape = lineshape_pseudovoigt(nu_win - nu_center, alpha[k,i], gamma[k,i]) 
+            if line_shape == 'voigt':
+                lineshape = lineshape_voigt(nu_win - nu_center, alpha[k,i], gamma[k,i])
+
+            if remove_plinth:
+                # plinth is defined from lorentzian shape
+                lineshape -= lineshape_lorentz(cutoff, gamma[k,i])
+
+            # add contribution of line to kappa
+            kappa[k,i1:i2] += S[k,i]*lineshape
+
+    return kappa
+
+@nb.jit(fastmath=True, parallel=True)
+def heavy_lifting_v1(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, force_lines_to_grid):
+
+    # grid parameters
+    nu_min = nu[0]
+    dnu = nu[1] - nu_min # assumes evenly-spaced nu grid
+    Ngrid = len(nu)
+    Nwin = int(cutoff/dnu) # half window width in gridpoints
+    Np, Nlines = S.shape
+
+    # define lineshape function
+    if line_shape == 'lorentz':
+        lineshape_func = lambda nu, alpha, gamma: lineshape_lorentz(nu, gamma) 
+    if line_shape == 'pseudovoigt':
+        lineshape_func = lambda nu, alpha, gamma: lineshape_pseudovoigt(nu, alpha, gamma) 
+    if line_shape == 'voigt':
+        lineshape_func = lambda nu, alpha, gamma: lineshape_voigt(nu, alpha, gamma) 
+
+    # array to hold output
+    kappa = np.zeros((Np, Ngrid), dtype='float')
+
+    # note: numba prange makes a big difference if used in at least one loop
+    # using it in both loops gives no further acceleration
+    # swapping order of loops makes no difference
+    for i in nb.prange(Nlines):
+        
+        ## # select window (odd no. of points, Nwin gridpoints either side of center)
+        ## i0 = int(np.round( (nu_l[i] - nu_min)/dnu) ) # index of window center = gridpoint closest to line
+        ## i1 = max(0, i0 - Nwin) # start of window
+        ## i2 = min(Ngrid, i0 + Nwin + 1) # end of window
+        # select window (even no. of points, Nwin gridpoints either side of line)
+        i0 = int( (nu_l[i] - nu_min)/dnu + 1 ) # index of grid point to the right of line
+        i1 = max(0, i0 - Nwin) # start of window
+        i2 = min(Ngrid, i0 + Nwin) # end of window
         nu_win = nu[i1:i2] # wavenumbers in window
 
         # choose where to place the line
@@ -70,12 +145,7 @@ def heavy_lifting(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, 
 
         # compute line shape and add to kappa
         for k in nb.prange(Np):                                     
-            if line_shape == 'lorentz':
-                lineshape = lineshape_lorentz(nu_win - nu_center, gamma[k,i]) 
-            if line_shape == 'pseudovoigt':
-                lineshape = lineshape_pseudovoigt(nu_win - nu_center, alpha[k,i], gamma[k,i]) 
-            if line_shape == 'voigt':
-                lineshape = lineshape_voigt(nu_win - nu_center, alpha[k,i], gamma[k,i]) 
+            lineshape = lineshape_func(nu_win - nu_center, alpha[k,i], gamma[k,i]) 
             if remove_plinth:
                 # plinth is defined from lorentzian shape
                 lineshape -= lineshape_lorentz(cutoff, gamma[k,i])
