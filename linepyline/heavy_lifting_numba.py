@@ -48,14 +48,6 @@ def heavy_lifting(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, 
     Nwin = int(cutoff/dnu) # half window width in gridpoints
     Np, Nlines = S.shape
 
-    # define lineshape function
-    if line_shape == 'lorentz':
-        lineshape_func = lambda nu, alpha, gamma: lineshape_lorentz(nu, gamma) 
-    if line_shape == 'pseudovoigt':
-        lineshape_func = lambda nu, alpha, gamma: lineshape_pseudovoigt(nu, alpha, gamma) 
-    if line_shape == 'voigt':
-        lineshape_func = lambda nu, alpha, gamma: lineshape_voigt(nu, alpha, gamma) 
-
     # array to hold output
     kappa = np.zeros((Np, Ngrid), dtype='float')
 
