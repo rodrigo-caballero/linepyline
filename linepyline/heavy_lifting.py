@@ -1,12 +1,13 @@
 import numpy as np
 import scipy
 
-def two_stream(B, Bs, tau, D):
+def two_stream(B, Bs, tau, eps, D):
     '''
     Integrates 2-stream Schwarzschild equations
     tau is optical depth *at layer interfaces*
     B is source function on layer midpoints (W/m2/steradian/cm-1)
     Bs is surface source function (W/m2/steradian/cm-1)
+    eps is surface emissivity
     Returns fluxes on interfaces, same units as B
     '''
     # scale for 2 stream
@@ -16,16 +17,6 @@ def two_stream(B, Bs, tau, D):
 
     # compute fluxes (on layer interfaces, defined positive upward)
     Np, Nnu = tau.shape
-    # -- upward stream, track surface and atmos contributions separately
-    Fup_srf = np.zeros((Np, Nnu)) 
-    Fup_atm = np.zeros((Np, Nnu))
-    for i in range(0, Np-1):
-        Fup_srf[i] = Bs*np.exp( -np.abs(tau[i] - tau[-1]) ) # transmissivity between level i and surface
-        trans = np.exp( -np.abs(tau[i] - tau[i:]) ) # transmissivity between level i and levels below i
-        dtrans = trans[:-1] - trans[1:]
-        Fup_atm[i] = (B[i:]*dtrans).sum(axis=0)
-    Fup_srf[-1] = Bs
-    Fup = Fup_srf + Fup_atm
 
     # -- downward stream
     Fdown = np.zeros((Np, Nnu))
@@ -33,6 +24,17 @@ def two_stream(B, Bs, tau, D):
         trans = np.exp( -np.abs(tau[i] - tau[:i+1]) ) # transmissivity between level i and levels above i
         dtrans = trans[:-1] - trans[1:] 
         Fdown[i,:] = (B[:i]*dtrans).sum(axis=0)
+
+    # -- upward stream, track surface and atmos contributions separately
+    Fup_srf = np.zeros((Np, Nnu)) 
+    Fup_atm = np.zeros((Np, Nnu))
+    Fup_srf[-1] = eps*Bs - (1-eps)*Fdown[-1]
+    for i in range(0, Np-1):
+        Fup_srf[i] = Fup_srf[-1]*np.exp( -np.abs(tau[i] - tau[-1]) ) # transmissivity between level i and surface
+        trans = np.exp( -np.abs(tau[i] - tau[i:]) ) # transmissivity between level i and levels below i
+        dtrans = trans[:-1] - trans[1:]
+        Fup_atm[i] = (B[i:]*dtrans).sum(axis=0)
+    Fup = Fup_srf + Fup_atm
 
     return Fup_srf, Fup_atm, Fup, Fdown
 

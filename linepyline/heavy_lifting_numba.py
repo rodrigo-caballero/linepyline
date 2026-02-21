@@ -2,8 +2,82 @@ import numpy as np
 import numba as nb
 import numba_stats.voigt
 
-@nb.jit(fastmath=True, parallel=True)
-def two_stream(B, Bs, tau, D):
+@nb.njit(parallel=True, fastmath=False)
+def two_stream(
+    B: np.ndarray,             # (Nlay, Nwn)     Planck radiance per wn in layers
+    Bs: np.ndarray,            # (Nwn,)          Planck radiance per wn at surface
+    tau_int: np.ndarray,       # (Nlay+1, Nwn)   optical depth τ at interfaces (downward-increasing)
+    surface_emissivity: np.ndarray, # (Nwn,)          spectral surface emissivity ε(wn)
+    D: float                   # diffusivity factor
+    ):
+    
+    Nlay, Nwn = B.shape
+
+    # Allocate outputs at interfaces
+    Fdn = np.zeros((Nlay + 1, Nwn), dtype=np.float64)
+    Fup  = np.zeros((Nlay + 1, Nwn), dtype=np.float64)
+    Fup_atm = np.zeros((Nlay + 1, Nwn), dtype=np.float64)
+    Fup_srf = np.zeros((Nlay + 1, Nwn), dtype=np.float64)
+
+    # Scale for 2 stream
+    B  = np.pi*B
+    Bs = np.pi*Bs
+    tau_int = D * tau_int
+
+    # --- Downward sweep (TOA -> surface)
+    for k in range(Nlay):
+        for i in nb.prange(Nwn):
+            # Δτ = τ(k+1) - τ(k); enforce non-negative
+            dt = tau_int[k + 1, i] - tau_int[k, i]
+            if dt <= 0.0:
+                tr = 1.0  # transparent if non-physical negative Δτ is encountered
+            else:
+                if dt > 700.0:
+                    tr = 0.0
+                else:
+                    tr = np.exp(-dt)
+            Fdn[k + 1, i] = B[k, i] + (Fdn[k, i] - B[k, i]) * tr
+
+    # --- Surface boundary (includes reflection from surface if emissivity < 1)
+    for i in nb.prange(Nwn):
+        eps = surface_emissivity[i]
+        Fup[Nlay, i] = eps * Bs[i] + (1.0 - eps) * Fdn[Nlay, i] 
+
+    # --- Upward sweep (surface -> TOA)
+    for k in range(Nlay - 1, -1, -1):
+        for i in nb.prange(Nwn):
+            dt = tau_int[k + 1, i] - tau_int[k, i]
+            if dt <= 0.0:
+                tr = 1.0
+            else:
+                if dt > 700.0:
+                    tr = 0.0
+                else:
+                    tr = np.exp(-dt)
+            Fup[k, i] = B[k, i] + (Fup[k + 1, i] - B[k,i]) * tr
+
+        # surface contribution to upward flux
+        for i in nb.prange(Nwn):
+            dt = tau_int[Nlay, i] - tau_int[k, i]
+            if dt <= 0.0:
+                tr = 1.0
+            else:
+                if dt > 700.0:
+                    tr = 0.0
+                else:
+                    tr = np.exp(-dt)
+            Fup_srf[k, i] = Fup[Nlay, i] * tr
+
+    # downward flux defined negative
+    Fdn = -Fdn
+
+    # atmospheric contribution to upward flux
+    Fup_atm = Fup - Fup_srf
+
+    return Fup_srf, Fup_atm, Fup, Fdn
+
+@nb.jit(fastmath=False, parallel=True)
+def two_stream_v1(B, Bs, tau, D):
     '''
     Integrates 2-stream Schwarzschild equations
     tau is optical depth *at layer interfaces*
@@ -38,7 +112,9 @@ def two_stream(B, Bs, tau, D):
 
     return Fup_srf, Fup_atm, Fup, Fdown
 
-@nb.jit(fastmath=True, parallel=True)
+
+
+@nb.jit(fastmath=False, parallel=True)
 def heavy_lifting(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, force_lines_to_grid):
 
     # grid parameters
@@ -92,7 +168,7 @@ def heavy_lifting(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, 
 
     return kappa
 
-@nb.jit(fastmath=True, parallel=True)
+@nb.jit(fastmath=False, parallel=True)
 def heavy_lifting_v1(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, force_lines_to_grid):
 
     # grid parameters
@@ -147,7 +223,7 @@ def heavy_lifting_v1(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plint
 
     return kappa        
 
-@nb.njit(fastmath=True, parallel=True) # numba gives ~10x acceleration here!
+@nb.njit(fastmath=False, parallel=True) # numba gives ~10x acceleration here!
 def heavy_lifting_v2(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plinth, force_lines_to_grid):
 
     # get grid parameters
@@ -187,7 +263,7 @@ def heavy_lifting_v2(nu, nu_l, S, gamma, alpha, cutoff, line_shape, remove_plint
             kappa[:,i1:i2] -= lineshape_lorentz(cutoff, gamma[:,i])
     return kappa        
 
-@nb.njit(fastmath=True, parallel=True) 
+@nb.njit(fastmath=False, parallel=True) 
 def heavy_lifting_with_binning(nu, nu_l, S, gamma, alpha, Nbins_gamma, Nbins_alpha,
                                cutoff, line_shape, remove_plinth):
     
@@ -273,7 +349,7 @@ def heavy_lifting_with_binning(nu, nu_l, S, gamma, alpha, Nbins_gamma, Nbins_alp
 """
 Line shape functions 
 """
-@nb.njit(fastmath=True)
+@nb.njit(fastmath=False)
 def lineshape_gaussian(x, alpha):
     """ 
     Return Gaussian line shape at x with HWHM alpha 
@@ -281,14 +357,14 @@ def lineshape_gaussian(x, alpha):
     sigma = alpha/np.sqrt(2*np.log(2)) # HWHM -> std dev
     return np.exp(-(x/sigma)**2/2) / np.sqrt(2*np.pi)/sigma
 
-@nb.njit(fastmath=True)
+@nb.njit(fastmath=False)
 def lineshape_lorentz(x, gamma):
     """ 
     Return Lorentzian line shape at x with HWHM gamma 
     """
     return gamma/np.pi/(x**2 + gamma**2)
 
-@nb.njit(fastmath=True)
+@nb.njit(fastmath=False)
 def lineshape_pseudovoigt(x, alpha, gamma):
     """
     Return the pseudo-Voigt line shape at x, linear mixture of Lorentzian component HWHM gamma and Gaussian component HWHM alpha.
@@ -302,7 +378,7 @@ def lineshape_pseudovoigt(x, alpha, gamma):
     eta = 1.36603*(gamma/width) - 0.47719*(gamma/width)**2 + 0.11116*(gamma/width)**3
     return (1 - eta)*lineshape_gaussian(x, width) + eta*lineshape_lorentz(x, width)
 
-@nb.njit(fastmath=True)
+@nb.njit(fastmath=False)
 def lineshape_voigt(x, alpha, gamma):
     """
     Return the Voigt line shape at x with Lorentzian component HWHM gamma and Gaussian component HWHM alpha.

@@ -389,7 +389,7 @@ class rtm():
                            p, ps, T, Ts, q=None, RH=None, absorbers=None, 
                            D = 1.5, line_shape='lorentz', cutoff=25., force_lines_to_grid=False,
                            binning=False, Nbins_gamma=500, Nbins_alpha=10,
-                           include_mtckd_continuum=True, closure=False):                   
+                           include_mtckd_continuum=True, closure=False, surface_emissivity=None):                   
         '''
         Compute longwave (thermal) radiative fluxes given absorber concentrations
 
@@ -427,6 +427,7 @@ class rtm():
           absorbption coefficients, but may be contaminated by aerosol absorption at the data collection sites
           if False, selects for_absco, which tries to eliminate the aerosol contribution to give a true clear-sky value
           See Mlawer et al 2024 JGR, "A more transparent infrared window"
+        surface_emissivity: spectral surface emissivity, array, defaults to 1 at all wavenumbers
         '''
 
         # convert input data to xarray where necessary
@@ -443,10 +444,12 @@ class rtm():
         nu = self.get_nu_grid(nu_min, nu_max, dnu)
         B = self.Planck(nu, T)
         Bs = self.Planck(nu, Ts)
-    
+        if surface_emissivity is None:
+            surface_emissivity = xr.ones_like(Bs)
+        
         # compute 2-stream fluxes on layer interfaces, defined positive upward
         # note self.tau_int is the optical depth on interfaces, updated in the previous call to get_optical_depth
-        Fup_srf, Fup_atm, Fup, Fdn = self.two_stream(B.data, Bs.data, self.tau_int, D)
+        Fup_srf, Fup_atm, Fup, Fdn = self.two_stream(B.data, Bs.data, self.tau_int, surface_emissivity.data, D)
         Fnet = Fup + Fdn
 
         # heating rate (K/day/cm-1)
