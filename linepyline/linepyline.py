@@ -606,22 +606,33 @@ class rtm():
 
     def format_input(self, p, *args):
         # input -> output:
-        # xarray -> xarray
-        # list, ndarray -> xarray with p as coord
-        # int, float -> float
+        # xarray, ndarray, list of length > 1 -> xarray with p as coord
+        # xarray, ndarray, list of length 0, int or float -> float
         # None -> None
         output = []
         if isinstance(p, xr.DataArray):
-            pass
-        elif isinstance(p, list) or isinstance(p, np.ndarray):
+            if (len(p.shape) > 0) and (len(p) > 1):
+                p = xr.DataArray(p.data, coords={'p':p.data}, name='p', attrs={'long_name':'pressure (Pa)'})
+            else:
+                p = float(p.data)
+        elif isinstance(p, np.ndarray) and (len(p.shape) > 0) and (len(p) > 1):
+            p = xr.DataArray(p, coords={'p':p}, name='p', attrs={'long_name':'pressure (Pa)'})
+        elif isinstance(p, list) and (len(p) > 1):
             p = xr.DataArray(p, coords={'p':p}, name='p', attrs={'long_name':'pressure (Pa)'})
         else:
             p = float(p)
         output.append(p)
         for arg in args:
-            if (arg is None) or isinstance(arg, xr.DataArray):
+            if (arg is None):
                 pass
-            elif isinstance(arg, list) or isinstance(arg, np.ndarray):
+            elif isinstance(arg, xr.DataArray):
+                if (len(arg.shape) > 0) and (len(arg) > 1):
+                    arg = xr.DataArray(arg.data, coords={'p':p})
+                else:
+                    arg = float(arg.data)
+            elif isinstance(arg, np.ndarray) and (len(arg.shape) > 0) and (len(arg) > 1):
+                arg = xr.DataArray(arg, coords={'p':p})
+            elif isinstance(arg, list) and (len(arg) > 0):
                 arg = xr.DataArray(arg, coords={'p':p})
             else:
                 arg = float(arg)
