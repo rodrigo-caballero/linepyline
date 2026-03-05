@@ -63,6 +63,10 @@ ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, \
 ds_coarse = rtm.coarsen(ds, dnu, width=10)
 
 # Plot
+plt.plot(ds.nu, ds.olr, 'k,', alpha=0.2, label='OLR')
+plt.plot(ds_coarse.nu, ds_coarse.olr, label='OLR coarse')
+plt.plot(ds.nu, ds.lw_up_srf, 'k:', label='Surface upward')
+plt.legend()
 ```
 ![](examples/h2o_only.svg)
 ```
