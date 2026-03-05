@@ -108,7 +108,7 @@ numba-stats (1.11)
 ```
 Using conda, you can install these into your current environment:
 ```
-conda install -c conda-forge numpy xarray scipy numba numba-stats
+conda install -c conda-forge numpy xarray netCDF4 scipy numba numba-stats
 ```
 or create a new environment
 ```
