@@ -28,8 +28,9 @@ thermodynamic data for the new molecules to the gases inventory in `linepyline/p
 ## How it works
 A quick example to illustrate basic usage. 
 ```
-import xarray as xr
 import linepyline
+import xarray as xr
+from matplotlib import pyplot as plt
 
 # Initialize a linepyline radiative transfer model (rtm) object
 rtm = linepyline.rtm()
