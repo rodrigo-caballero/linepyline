@@ -56,7 +56,7 @@ nu_max = 2000
 # Runtime for this call on an 8-core MacBook M3 is 
 # 0.4 s with numba, 10.6 s without numba, ~25x speedup
 ds = rtm.radiative_transfer(nu_min, nu_max, dnu, p, ps, T, Ts, \
-       absorbers=absorbers, background_gas=background_gas, line_shape=line_shape)
+        absorbers=absorbers, line_shape=line_shape)
 
 # Make a spectrally-coarsend version of the output 
 # (averages over blocks of width in cm-1)
