@@ -12,13 +12,6 @@ license = "GPL-3.0-or-later"
 authors = [{name = "Rodrigo Caballero", email = "rodrigo.caballero@misu.su.se"}]
 keywords = ["HITRAN", "MT_CKD", "line-by-line", "radiative transfer"]
 classifiers = ["Programming Language :: Python :: 3"]
-#dependencies = [
-#    "numpy>=2.2",
-#    "xarray>=2025.4",
-#    "scipy>=1.15",
-#    "numba>=0.63",
-#    "numba-stats>=1.11"
-#     ]
 
 [project.urls]
 Homepage = "https://github.com/yourusername/my-package"
@@ -26,7 +19,7 @@ Homepage = "https://github.com/yourusername/my-package"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["linepyline*"]  # Based on your earlier error
+include = ["linepyline*"]
 
 [tool.setuptools.package-data]
 linepyline = ["**/*"]  # Include all files under linepyline

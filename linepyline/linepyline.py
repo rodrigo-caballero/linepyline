@@ -444,6 +444,7 @@ class rtm():
         nu = self.get_nu_grid(nu_min, nu_max, dnu)
         B = self.Planck(nu, T)
         Bs = self.Planck(nu, Ts)
+        ### TODO handle surf emiss cases properly (check if input xarray etc)
         if surface_emissivity is None:
             surface_emissivity = xr.ones_like(Bs)
         
@@ -509,6 +510,8 @@ class rtm():
                           coords=nu.coords, name='lw_dn_srf', attrs={'long_name': 'downward surface LW flux (W/m2/cm-1)'}),
             xr.DataArray( Fnet[-1],
                           coords=nu.coords, name='lw_net_srf', attrs={'long_name': 'net surface LW flux (W/m2/cm-1)'}),
+            xr.DataArray( np.pi*surface_emissivity.data*Bs.data,
+                          coords=nu.coords, name='srf_emission', attrs={'long_name': 'surface emission = pi*emissivity*Bs (W/m2/cm-1)'}),
             xr.DataArray( self.Tbrightness(nu, Fup[0]).rename('Tb'),
                           coords=nu.coords, name='Tb', attrs={'long_name': 'brightness temperature seen from space (K)'}),
             xr.DataArray( xr.where(-Fdn[-1] > 0, self.Tbrightness(nu, np.maximum(-Fdn[-1], 1.e-32)), np.nan).rename('Tb_srf'),
